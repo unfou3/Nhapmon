@@ -10,15 +10,30 @@
 #include <DHT.h>
 #include <Wire.h>
 #include <string.h>
+#include <LiquidCrystal_I2C.h>
+
+// set the LCD number of columns and rows
+int lcdColumns = 16;
+int lcdRows = 2;
+LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);  
+
 
 //define sensor
 #define DHTPIN1 19
 #define DHTPIN2 15
-#define sensorPower 22
-#define RAIN_SENSOR 23
+#define sensorPower 34
+#define RAIN_SENSOR 35
 #define DHTTYPE DHT22
-#define GREEN_LED 21
+#define BUZZ 33
 #define LED 18
+#define BUTTON1 12
+#define BUTTON2 13
+#define RIGHT 2
+#define LEFT 4
+#define LED_BUTTON 27
+#define SS1 32
+#define SS2 26
+#define BZ 33
 
 DHT dht1(DHTPIN1, DHTTYPE);
 DHT dht2(DHTPIN2, DHTTYPE);
@@ -36,6 +51,7 @@ int RAIN_SENSOR_VALUE;
 char auth[] = BLYNK_AUTH_TOKEN;
 int LED_VALUE;
 int button;
+int button4;
 
 // Your WiFi Credentials.
 // Set password to "" for open networks.
@@ -47,14 +63,41 @@ void setup(){
   dht1.begin();
   dht2.begin();
   digitalWrite(sensorPower, LOW);
-  pinMode(GREEN_LED, OUTPUT);
+  pinMode(BUZZ, OUTPUT);
   pinMode(LED, OUTPUT);
   Blynk.begin(auth, ssid, pass);
+  pinMode(BUTTON1, INPUT_PULLUP);
+  pinMode(BUTTON2, INPUT_PULLUP);
+  pinMode(LEFT, OUTPUT);
+  pinMode(RIGHT, OUTPUT);
+  pinMode(BZ, OUTPUT);
+  pinMode(SS1, INPUT);
+  pinMode(SS2, INPUT);
+  // initialize LCD
+  lcd.init();
+  // turn on LCD backlight                      
+  lcd.backlight();
 }
 
 void loop(){
+  if ((digitalRead(BUTTON1) == digitalRead(BUTTON2)) & (digitalRead(BUTTON1) == HIGH) ){
+    digitalWrite(LEFT, LOW);
+    digitalWrite(RIGHT, LOW);
+  }
+  if ((digitalRead(BUTTON1) == digitalRead(BUTTON2)) & (digitalRead(BUTTON1) == LOW) ){
+    digitalWrite(LEFT, LOW);
+    digitalWrite(RIGHT, LOW);
+  }
+  if ((digitalRead(BUTTON1) != digitalRead(BUTTON2)) & (digitalRead(BUTTON1) == HIGH) ){
+    digitalWrite(LEFT, HIGH);
+    digitalWrite(RIGHT, LOW);
+  }
+  if ((digitalRead(BUTTON1) != digitalRead(BUTTON2)) & (digitalRead(BUTTON2) == HIGH) ){
+    digitalWrite(LEFT, LOW);
+    digitalWrite(RIGHT, HIGH);
+  }
   Blynk.run();
-  delay(2000);
+  delay(1000);
   float h1 = dht1.readHumidity();
   float t1 = dht1.readTemperature();
   float f1 = dht1.readTemperature(true);
@@ -81,25 +124,13 @@ void loop(){
   float hic2 = dht2.computeHeatIndex(t2, h2, false);
 
   RAIN_SENSOR_VALUE = digitalRead(RAIN_SENSOR);
-  if (RAIN_SENSOR_VALUE == 0 ){
-    digitalWrite(GREEN_LED, LOW);
-  }
-  else{
-    digitalWrite(GREEN_LED, HIGH);
-  }
 
-
-  if (RAIN_SENSOR_VALUE == 0 )
-  {
-    Blynk.logEvent("rain", "Water Detected!");
-    Blynk.virtualWrite(VPIN_BUTTON_2, "Water Detected!!");
-  }
-  else if (RAIN_SENSOR_VALUE == 1 )
-  {
-    Blynk.virtualWrite(VPIN_BUTTON_2, "No Water Detected.");
-  }
-  Blynk.virtualWrite(VPIN_BUTTON_0, "Temprature: " + String(t1) + " " + "Humidity: " + String(h1));
-  Blynk.virtualWrite(VPIN_BUTTON_1, "Temprature: " + String(t2) + " " + "Humidity: " + String(h2));
+  Blynk.virtualWrite(VPIN_BUTTON_0, t1);
+  Blynk.virtualWrite(VPIN_BUTTON_1, h1);
+  lcd.setCursor(0, 0);
+  lcd.print("Nhiet do:" + String(t2));
+  lcd.setCursor(0,1);
+  lcd.print("Do am:" + String(h2));
 }
 BLYNK_WRITE(VPIN_BUTTON_3) {
   button = param.asInt();
@@ -109,3 +140,39 @@ BLYNK_WRITE(VPIN_BUTTON_3) {
     digitalWrite(LED, LOW);
   }
 }
+BLYNK_WRITE(VPIN_BUTTON_4) {
+  button4 = param.asInt();
+  if(button4 == 1){
+    if (RAIN_SENSOR_VALUE == 0 )
+    {
+      Blynk.logEvent("rain", "Water Detected!");
+      Blynk.virtualWrite(VPIN_BUTTON_2, "Water Detected!!");
+    }
+    else if (RAIN_SENSOR_VALUE == 1 )
+    {
+      Blynk.virtualWrite(VPIN_BUTTON_2, "No Water Detected.");
+    }
+    if(digitalRead(SS1) != 1){
+      digitalWrite(LEFT, HIGH);
+      digitalWrite(RIGHT, LOW);
+      digitalWrite(BZ, HIGH);
+    }
+    else{
+      digitalWrite(LEFT, LOW);
+      digitalWrite(RIGHT, LOW);
+      digitalWrite(BZ, LOW);
+    }
+  }
+  else{
+    if(digitalRead(SS2) != 1){
+      digitalWrite(LEFT, LOW);
+      digitalWrite(RIGHT, HIGH);
+    }
+    else{
+      digitalWrite(LEFT, LOW);
+      digitalWrite(RIGHT, LOW);
+      digitalWrite(BZ, LOW);
+    }
+  }
+}
+

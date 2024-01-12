@@ -80,6 +80,9 @@ void setup(){
 }
 
 void loop(){
+  if ((digitalRead(SS1) == 1) || (digitalRead(SS2) == 1)){
+    digitalWrite(BZ, LOW);
+  }
   if ((digitalRead(BUTTON1) == digitalRead(BUTTON2)) & (digitalRead(BUTTON1) == HIGH) ){
     digitalWrite(LEFT, LOW);
     digitalWrite(RIGHT, LOW);
@@ -152,26 +155,17 @@ BLYNK_WRITE(VPIN_BUTTON_4) {
     {
       Blynk.virtualWrite(VPIN_BUTTON_2, "No Water Detected.");
     }
-    if(digitalRead(SS1) != 1){
+    while(digitalRead(SS2) != 1){
       digitalWrite(LEFT, HIGH);
       digitalWrite(RIGHT, LOW);
       digitalWrite(BZ, HIGH);
     }
-    else{
-      digitalWrite(LEFT, LOW);
-      digitalWrite(RIGHT, LOW);
-      digitalWrite(BZ, LOW);
-    }
   }
   else{
-    if(digitalRead(SS2) != 1){
+    while(digitalRead(SS1) != 1){
       digitalWrite(LEFT, LOW);
       digitalWrite(RIGHT, HIGH);
-    }
-    else{
-      digitalWrite(LEFT, LOW);
-      digitalWrite(RIGHT, LOW);
-      digitalWrite(BZ, LOW);
+      digitalWrite(BZ, HIGH);
     }
   }
 }
